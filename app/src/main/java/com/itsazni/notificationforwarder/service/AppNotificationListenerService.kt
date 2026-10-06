@@ -35,18 +35,27 @@ class AppNotificationListenerService : NotificationListenerService() {
         val title = extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
         val text = extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
         val bigText = extras?.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString().orEmpty()
-
+        val subText = extras?.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString().orEmpty()
+        
+        // اولویت‌بندی محتوا: bigText > text > subText
+        val finalText = when {
+            bigText.isNotBlank() -> bigText
+            text.isNotBlank() -> text
+            subText.isNotBlank() -> subText
+            else -> ""
+        }
+        
         if (shouldSkip(item, notification, title, text, bigText)) {
             return
         }
-
+        
         serviceScope.launch {
             val repository = NotificationRepository(applicationContext)
             repository.enqueue(
                 packageName = item.packageName,
                 appName = resolveAppName(item.packageName),
                 title = title,
-                text = text,
+                text = finalText,     // ← حالا بهترین محتوا رو می‌فرسته
                 postedAt = item.postTime,
                 notificationKey = item.key
             )
